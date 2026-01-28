@@ -20,7 +20,7 @@ export class MultiplayerService {
   public onBossComment?: (text: string) => void;
 
   constructor() {
-    console.log("🛠 MultiplayerService initialized");
+    console.log("📡 [Synergy Network] Initializing service...");
     this.gameState = {
       players: {},
       foods: this.generateFoods(50),
@@ -41,39 +41,46 @@ export class MultiplayerService {
 
   private initializePeer() {
     try {
-      // Intentar obtener el constructor de Peer, manejando exportaciones default
+      // Handle potential default export differences in CDNs
       const PeerJS = (Peer as any).default || Peer;
       
-      if (!PeerJS) {
-        console.warn("PeerJS not available yet, retrying...");
-        setTimeout(() => this.initializePeer(), 1000);
+      if (!PeerJS || typeof PeerJS !== 'function') {
+        console.warn("⚠️ [Synergy Network] PeerJS not yet available as a constructor. Retrying...");
+        setTimeout(() => this.initializePeer(), 500);
         return;
       }
 
       this.peer = new PeerJS();
       
       this.peer.on('open', (id: string) => {
-        console.log('✅ Network ready. Employee ID:', id);
+        console.log('✅ [Synergy Network] ID assigned:', id);
         this.myId = id;
         if (this.onIdAssigned) this.onIdAssigned(id);
       });
 
       this.peer.on('connection', (conn: any) => {
+        console.log('🤝 [Synergy Network] Incoming connection:', conn.peer);
         if (this.isHost) {
           this.handleNewConnection(conn);
         }
       });
 
       this.peer.on('error', (err: any) => {
-        console.error('❌ Network Error:', err.type);
+        console.error('❌ [Synergy Network] Peer error:', err.type, err);
+      });
+
+      this.peer.on('disconnected', () => {
+        console.warn('🔌 [Synergy Network] Peer disconnected. Reconnecting...');
+        this.peer.reconnect();
       });
 
     } catch (e) {
-      console.error('❌ Fatal PeerJS initialization error:', e);
+      console.error('❌ [Synergy Network] Critical initialization error:', e);
     }
   }
 
   public initHost(name: string, color: string) {
+    console.log("👑 [Synergy Network] Promoting employee to Host...");
     this.isHost = true;
     this.roomCode = this.myId;
     this.gameState.status = 'playing';
@@ -81,12 +88,17 @@ export class MultiplayerService {
   }
 
   public joinRoom(hostId: string, name: string, color: string) {
-    if (!this.peer) return;
+    if (!this.peer) {
+      console.error("❌ [Synergy Network] Join failed: Network not initialized.");
+      return;
+    }
+    console.log(`🔗 [Synergy Network] Joining office: ${hostId}...`);
     this.isHost = false;
     this.roomCode = hostId;
     const conn = this.peer.connect(hostId);
     
     conn.on('open', () => {
+      console.log('✅ [Synergy Network] Connected to Host.');
       this.connections[hostId] = conn;
       conn.send({ type: 'JOIN_REQUEST', name, color });
     });
@@ -100,12 +112,17 @@ export class MultiplayerService {
         if (this.onBossComment) this.onBossComment(msg.text);
       }
     });
+
+    conn.on('close', () => {
+      console.warn('❌ [Synergy Network] Host connection closed.');
+    });
   }
 
   private handleNewConnection(conn: DataConnection) {
     conn.on('data', async (data: any) => {
       const msg = data as NetworkMessage;
       if (msg.type === 'JOIN_REQUEST') {
+        console.log(`👤 [Synergy Network] Adding player: ${msg.name}`);
         this.addPlayer(conn.peer, msg.name, msg.color);
         this.connections[conn.peer] = conn;
         
@@ -148,6 +165,7 @@ export class MultiplayerService {
         y: head.y + Math.sin(player.angle) * player.speed
       };
 
+      // Border collision
       if (newHead.x < 0 || newHead.x > WORLD_SIZE || newHead.y < 0 || newHead.y > WORLD_SIZE) {
         player.isDead = true;
         const comment = await getBossCommentary("Player hit wall", player.name, player.score);
@@ -155,6 +173,7 @@ export class MultiplayerService {
         return;
       }
 
+      // Snake collision
       for (const other of (Object.values(this.gameState.players) as Player[])) {
         if (other.isDead) continue;
         const startIdx = other.id === player.id ? 5 : 0; 
@@ -170,6 +189,7 @@ export class MultiplayerService {
         }
       }
 
+      // Movement and growth logic
       const newSegments = [newHead];
       let lastPos = newHead;
       for (let i = 0; i < player.segments.length - 1; i++) {
@@ -186,6 +206,7 @@ export class MultiplayerService {
       }
       player.segments = newSegments.slice(0, Math.floor(INITIAL_SNAKE_LENGTH + player.score / 5));
 
+      // Food collection
       this.gameState.foods = this.gameState.foods.filter(food => {
         const dist = Math.hypot(newHead.x - food.x, newHead.y - food.y);
         if (dist < 25) {

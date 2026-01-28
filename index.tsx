@@ -3,7 +3,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-console.log("🚀 Office Snakes point of entry triggered.");
+console.log("🚀 [Synergy] Entry point triggered. Mounting application...");
 
 const container = document.getElementById('root');
 if (container) {
@@ -14,10 +14,10 @@ if (container) {
         <App />
       </React.StrictMode>
     );
-    console.log("✅ Office Snakes mounted successfully.");
+    console.log("✅ [Synergy] Application mounted successfully.");
   } catch (err) {
-    console.error("❌ Failed to mount React app:", err);
+    console.error("❌ [Synergy] Failed to mount React app:", err);
   }
 } else {
-  console.error("❌ Root element #root not found in DOM.");
+  console.error("❌ [Synergy] Critical Error: Root element '#root' not found.");
 }
