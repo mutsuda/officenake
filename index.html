@@ -18,21 +18,29 @@
         display: block;
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4",
-    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
-    "peerjs": "https://esm.sh/peerjs@^1.5.5"
-  }
-}
-</script>
-</head>
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@19.0.0",
+        "react/": "https://esm.sh/react@19.0.0/",
+        "react-dom": "https://esm.sh/react-dom@19.0.0",
+        "react-dom/": "https://esm.sh/react-dom@19.0.0/",
+        "lucide-react": "https://esm.sh/lucide-react@0.475.0?external=react",
+        "@google/genai": "https://esm.sh/@google/genai@0.21.0",
+        "peerjs": "https://esm.sh/peerjs@1.5.4"
+      }
+    }
+    </script>
+  </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div style="display: flex; height: 100vh; width: 100vw; align-items: center; justify-content: center; color: #64748b; font-family: system-ui, sans-serif;">
+        <div style="text-align: center;">
+          <h2 style="margin-bottom: 10px; color: white;">Initializing Synergy...</h2>
+          <p>Connecting to the office network</p>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

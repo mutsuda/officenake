@@ -1,6 +1,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { MultiplierService } from '../services/MultiplayerService';
+// Corrected the typo from MultiplierService to MultiplayerService
+import { MultiplayerService } from '../services/MultiplayerService';
 // Import Player type for explicit casting to fix 'unknown' type errors from Object.values
 import { GameState, Point, Player } from '../types';
 import { WORLD_SIZE, FOOD_TYPES } from '../constants';
@@ -8,7 +9,8 @@ import { getBossCommentary } from '../services/geminiService';
 import { LogOut, Users, Target, Activity } from 'lucide-react';
 
 interface GameViewProps {
-  multiplayer: MultiplierService;
+  // Corrected the typo from MultiplierService to MultiplayerService
+  multiplayer: MultiplayerService;
   isHost: boolean;
   playerName: string;
   playerColor: string;

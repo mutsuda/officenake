@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { GameView } from './components/GameView';
 import { Lobby } from './components/Lobby';
-import { MultiplierService } from './services/MultiplayerService';
+import { MultiplayerService } from './services/MultiplayerService';
 import { GameState } from './types';
 import { WORLD_SIZE } from './constants';
 
@@ -14,7 +14,8 @@ const App: React.FC = () => {
   const [playerName, setPlayerName] = useState('');
   const [playerColor, setPlayerColor] = useState('#3b82f6');
   
-  const [multiplayer] = useState(() => new MultiplierService());
+  // Usamos el nombre de clase corregido
+  const [multiplayer] = useState(() => new MultiplayerService());
 
   useEffect(() => {
     multiplayer.onIdAssigned = (id) => setPeerId(id);

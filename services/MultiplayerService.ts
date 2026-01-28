@@ -7,22 +7,19 @@ import {
 } from '../constants';
 import { getBossCommentary } from './geminiService';
 
-export class MultiplierService {
-  private peer: Peer;
+export class MultiplayerService {
+  private peer: Peer | null = null;
   private connections: Record<string, DataConnection> = {};
   private gameState: GameState;
   private isHost: boolean = false;
   private myId: string = '';
   public roomCode: string = '';
   
-  // Callbacks
   public onIdAssigned?: (id: string) => void;
   public onStateUpdate?: (state: GameState) => void;
   public onBossComment?: (text: string) => void;
 
   constructor() {
-    this.peer = new Peer();
-    
     this.gameState = {
       players: {},
       foods: this.generateFoods(50),
@@ -31,24 +28,34 @@ export class MultiplierService {
       status: 'lobby'
     };
 
-    this.peer.on('open', (id) => {
-      this.myId = id;
-      if (this.onIdAssigned) this.onIdAssigned(id);
-    });
+    try {
+      this.peer = new Peer();
+      
+      this.peer.on('open', (id) => {
+        this.myId = id;
+        if (this.onIdAssigned) this.onIdAssigned(id);
+      });
 
-    this.peer.on('connection', (conn) => {
-      if (this.isHost) {
-        this.handleNewConnection(conn);
-      }
-    });
+      this.peer.on('connection', (conn) => {
+        if (this.isHost) {
+          this.handleNewConnection(conn);
+        }
+      });
 
-    // Start local game loop if host
+      this.peer.on('error', (err) => {
+        console.error('PeerJS connection error:', err);
+      });
+
+    } catch (e) {
+      console.error('Failed to initialize PeerJS:', e);
+    }
+
     setInterval(() => {
       if (this.isHost && this.gameState.status === 'playing') {
         this.updateGameState();
         this.broadcast({ type: 'STATE_UPDATE', state: this.gameState });
       }
-    }, 1000 / 30); // 30 FPS logic
+    }, 1000 / 30);
   }
 
   public initHost(name: string, color: string) {
@@ -59,6 +66,7 @@ export class MultiplierService {
   }
 
   public joinRoom(hostId: string, name: string, color: string) {
+    if (!this.peer) return;
     this.isHost = false;
     this.roomCode = hostId;
     const conn = this.peer.connect(hostId);
@@ -86,7 +94,6 @@ export class MultiplierService {
         this.addPlayer(conn.peer, msg.name, msg.color);
         this.connections[conn.peer] = conn;
         
-        // Announce new employee with Gemini
         const comment = await getBossCommentary("New hire joined", msg.name, 0);
         this.broadcast({ type: 'AI_COMMENT', text: comment });
         if (this.onBossComment) this.onBossComment(comment);
@@ -117,7 +124,7 @@ export class MultiplierService {
   }
 
   private updateGameState() {
-    Object.values(this.gameState.players).forEach(async player => {
+    (Object.values(this.gameState.players) as Player[]).forEach(async player => {
       if (player.isDead) return;
 
       const head = player.segments[0];
@@ -126,7 +133,6 @@ export class MultiplierService {
         y: head.y + Math.sin(player.angle) * player.speed
       };
 
-      // 1. Check world bounds
       if (newHead.x < 0 || newHead.x > WORLD_SIZE || newHead.y < 0 || newHead.y > WORLD_SIZE) {
         player.isDead = true;
         const comment = await getBossCommentary("Player hit wall", player.name, player.score);
@@ -134,14 +140,9 @@ export class MultiplierService {
         return;
       }
 
-      // 2. Check collision with other players (or self)
-      // For simple office game, we just check heads against bodies
-      for (const other of Object.values(this.gameState.players)) {
+      for (const other of (Object.values(this.gameState.players) as Player[])) {
         if (other.isDead) continue;
-        
-        // Skip self head-on checks but check rest of body
         const startIdx = other.id === player.id ? 5 : 0; 
-        
         for (let i = startIdx; i < other.segments.length; i++) {
           const seg = other.segments[i];
           const dist = Math.hypot(newHead.x - seg.x, newHead.y - seg.y);
@@ -154,30 +155,22 @@ export class MultiplierService {
         }
       }
 
-      // 3. Move segments
       const newSegments = [newHead];
       let lastPos = newHead;
-      
       for (let i = 0; i < player.segments.length - 1; i++) {
         const current = player.segments[i];
         const dist = Math.hypot(lastPos.x - current.x, lastPos.y - current.y);
-        
         if (dist >= SEGMENT_DISTANCE) {
           newSegments.push(current);
           lastPos = current;
-        } else {
-           // If too close, just reuse existing to keep array length
-           // but we'll trim it properly based on score/length logic later
         }
       }
       
-      // Ensure we maintain a certain smoothness and length
       while (newSegments.length < player.segments.length) {
         newSegments.push(player.segments[newSegments.length]);
       }
       player.segments = newSegments.slice(0, Math.floor(INITIAL_SNAKE_LENGTH + player.score / 5));
 
-      // 4. Food Collection
       this.gameState.foods = this.gameState.foods.filter(food => {
         const dist = Math.hypot(newHead.x - food.x, newHead.y - food.y);
         if (dist < 25) {
@@ -187,7 +180,6 @@ export class MultiplierService {
         return true;
       });
 
-      // Respawn food
       if (this.gameState.foods.length < 50) {
         this.gameState.foods.push(...this.generateFoods(1));
       }
