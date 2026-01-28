@@ -1,0 +1,7 @@
+{
+  "name": "Office Snakes: Synergy Edition",
+  "description": "A real-time multiplayer snake game designed for office fun. Connect with colleagues via P2P, grow your snake by collecting 'deliverables', and receive snarky AI commentary from the 'Virtual Boss'.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
