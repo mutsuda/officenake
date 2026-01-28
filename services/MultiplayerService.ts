@@ -1,14 +1,14 @@
 
-import { Peer, DataConnection } from 'peerjs';
+import Peer, { DataConnection } from 'peerjs';
 import { GameState, Player, Food, NetworkMessage, Point } from '../types';
 import { 
-  WORLD_SIZE, INITIAL_SNAKE_LENGTH, BASE_SPEED, BOOST_SPEED, 
+  WORLD_SIZE, INITIAL_SNAKE_LENGTH, BASE_SPEED, 
   SEGMENT_DISTANCE, FOOD_TYPES 
 } from '../constants';
 import { getBossCommentary } from './geminiService';
 
 export class MultiplayerService {
-  private peer: Peer | null = null;
+  private peer: any = null;
   private connections: Record<string, DataConnection> = {};
   private gameState: GameState;
   private isHost: boolean = false;
@@ -20,6 +20,7 @@ export class MultiplayerService {
   public onBossComment?: (text: string) => void;
 
   constructor() {
+    console.log("🛠 MultiplayerService initialized");
     this.gameState = {
       players: {},
       foods: this.generateFoods(50),
@@ -28,27 +29,7 @@ export class MultiplayerService {
       status: 'lobby'
     };
 
-    try {
-      this.peer = new Peer();
-      
-      this.peer.on('open', (id) => {
-        this.myId = id;
-        if (this.onIdAssigned) this.onIdAssigned(id);
-      });
-
-      this.peer.on('connection', (conn) => {
-        if (this.isHost) {
-          this.handleNewConnection(conn);
-        }
-      });
-
-      this.peer.on('error', (err) => {
-        console.error('PeerJS connection error:', err);
-      });
-
-    } catch (e) {
-      console.error('Failed to initialize PeerJS:', e);
-    }
+    this.initializePeer();
 
     setInterval(() => {
       if (this.isHost && this.gameState.status === 'playing') {
@@ -56,6 +37,40 @@ export class MultiplayerService {
         this.broadcast({ type: 'STATE_UPDATE', state: this.gameState });
       }
     }, 1000 / 30);
+  }
+
+  private initializePeer() {
+    try {
+      // Intentar obtener el constructor de Peer, manejando exportaciones default
+      const PeerJS = (Peer as any).default || Peer;
+      
+      if (!PeerJS) {
+        console.warn("PeerJS not available yet, retrying...");
+        setTimeout(() => this.initializePeer(), 1000);
+        return;
+      }
+
+      this.peer = new PeerJS();
+      
+      this.peer.on('open', (id: string) => {
+        console.log('✅ Network ready. Employee ID:', id);
+        this.myId = id;
+        if (this.onIdAssigned) this.onIdAssigned(id);
+      });
+
+      this.peer.on('connection', (conn: any) => {
+        if (this.isHost) {
+          this.handleNewConnection(conn);
+        }
+      });
+
+      this.peer.on('error', (err: any) => {
+        console.error('❌ Network Error:', err.type);
+      });
+
+    } catch (e) {
+      console.error('❌ Fatal PeerJS initialization error:', e);
+    }
   }
 
   public initHost(name: string, color: string) {

@@ -3,14 +3,21 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-const rootElement = document.getElementById('root');
-if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
-}
+console.log("🚀 Office Snakes point of entry triggered.");
 
-const root = ReactDOM.createRoot(rootElement);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+const container = document.getElementById('root');
+if (container) {
+  try {
+    const root = ReactDOM.createRoot(container);
+    root.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+    console.log("✅ Office Snakes mounted successfully.");
+  } catch (err) {
+    console.error("❌ Failed to mount React app:", err);
+  }
+} else {
+  console.error("❌ Root element #root not found in DOM.");
+}
